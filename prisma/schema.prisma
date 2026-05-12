@@ -1,0 +1,228 @@
+// ─── Generator & Datasource ─────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum FsNodeType {
+  FILE
+  DIRECTORY
+}
+
+enum PermissionLevel {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum AuditAction {
+  // Auth
+  AUTH_SIGNUP
+  AUTH_LOGIN
+  AUTH_LOGOUT
+  AUTH_PASSWORD_RESET_REQUEST
+  AUTH_PASSWORD_RESET_COMPLETE
+  AUTH_SESSION_EXPIRED
+
+  // File System
+  FS_CREATE
+  FS_READ
+  FS_UPDATE
+  FS_DELETE
+  FS_MOVE
+  FS_COPY
+  FS_RENAME
+  FS_PERMISSION_GRANT
+  FS_PERMISSION_REVOKE
+
+  // Desktop
+  DESKTOP_LAYOUT_UPDATE
+  DESKTOP_WALLPAPER_CHANGE
+
+  // Admin
+  ADMIN_USER_SUSPEND
+  ADMIN_USER_ACTIVATE
+}
+
+// ─── Users & Authentication ──────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  displayName  String
+  passwordHash String
+  role         Role     @default(USER)
+  avatarUrl    String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  sessions           Session[]
+  passwordResetTokens PasswordResetToken[]
+  desktopLayout      DesktopLayout?
+  ownedFsNodes       FsNode[]             @relation("FsNodeOwner")
+  fsPermissions      FsPermission[]
+  windowStates       WindowState[]
+  auditLogs          AuditLog[]
+
+  @@index([email])
+  @@index([username])
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique @default(cuid())
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("sessions")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("password_reset_tokens")
+}
+
+// ─── Desktop ─────────────────────────────────────────────────────────────────
+
+model DesktopLayout {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  wallpaper   String   @default("default-gradient")
+  iconLayout  Json     @default("[]")   // Array of { appId, x, y }
+  taskbarApps Json     @default("[]")   // Array of appId strings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("desktop_layouts")
+}
+
+// ─── Window Manager ──────────────────────────────────────────────────────────
+
+model WindowState {
+  id          String   @id @default(cuid())
+  userId      String
+  instanceId  String   // unique per window instance
+  appId       String
+  title       String
+  x           Int      @default(100)
+  y           Int      @default(100)
+  width       Int      @default(800)
+  height      Int      @default(600)
+  isMinimized Boolean  @default(false)
+  isMaximized Boolean  @default(false)
+  zIndex      Int      @default(100)
+  appState    Json     @default("{}")  // App-specific state (open file path, etc.)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, instanceId])
+  @@index([userId])
+  @@map("window_states")
+}
+
+// ─── Virtual File System ─────────────────────────────────────────────────────
+
+model FsNode {
+  id          String     @id @default(cuid())
+  name        String
+  type        FsNodeType
+  parentId    String?
+  ownerId     String
+  content     String?    // For files: text content (or blob reference)
+  mimeType    String?    // e.g. "text/plain", "application/json"
+  size        Int        @default(0)  // bytes
+  isDeleted   Boolean    @default(false)
+  deletedAt   DateTime?
+  path        String     // Denormalized full path for fast lookups: /home/user/docs
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Self-referential tree
+  parent   FsNode?  @relation("FsTree", fields: [parentId], references: [id])
+  children FsNode[] @relation("FsTree")
+
+  // Relations
+  owner       User           @relation("FsNodeOwner", fields: [ownerId], references: [id])
+  permissions FsPermission[]
+
+  @@index([parentId])
+  @@index([ownerId])
+  @@index([path])
+  @@index([isDeleted])
+  @@map("fs_nodes")
+}
+
+model FsPermission {
+  id         String          @id @default(cuid())
+  nodeId     String
+  userId     String
+  level      PermissionLevel @default(VIEWER)
+  grantedBy  String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  node FsNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  user User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([nodeId, userId])
+  @@index([nodeId])
+  @@index([userId])
+  @@map("fs_permissions")
+}
+
+// ─── Audit Log ───────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  userId    String?
+  action    AuditAction
+  resource  String?     // e.g. "fs_node:clxyz123"
+  metadata  Json        @default("{}")
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+/* ─── CSS Custom Properties ─────────────────────────────────────────────── */
+:root {
+  --os-bg: #1e1e2e;
+  --os-surface: rgba(30, 30, 46, 0.85);
+  --os-surface-solid: #1e1e2e;
+  --os-border: rgba(255, 255, 255, 0.1);
+  --os-text: #cdd6f4;
+  --os-text-muted: #6c7086;
+  --os-accent: #89b4fa;
+  --os-accent-hover: #74c7ec;
+  --os-danger: #f38ba8;
+  --os-success: #a6e3a1;
+  --os-warning: #f9e2af;
+  --taskbar-height: 48px;
+  --titlebar-height: 32px;
+  --window-border-radius: 10px;
+  --window-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Desktop ─────────────────────────────────────────────────────────────── */
+.desktop-root {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  user-select: none;
+}
+
+/* ─── Window ──────────────────────────────────────────────────────────────── */
+.window-container {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--window-border-radius);
+  box-shadow: var(--window-shadow);
+  border: 1px solid var(--os-border);
+  background: var(--os-surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  overflow: hidden;
+  transition: box-shadow 0.15s ease;
+}
+
+.window-container.focused {
+  box-shadow: var(--window-shadow), 0 0 0 1px rgba(137, 180, 250, 0.3);
+}
+
+.window-container.minimized {
+  transform: scale(0.5) translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.window-titlebar {
+  height: var(--titlebar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--os-border);
+  gap: 8px;
+}
+
+.window-titlebar:active {
+  cursor: grabbing;
+}
+
+.window-traffic-lights {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.traffic-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  opacity: 0;
+}
+
+.window-titlebar:hover .traffic-light {
+  opacity: 1;
+}
+
+.traffic-light.close { background: #ff5f57; }
+.traffic-light.minimize { background: #febc2e; }
+.traffic-light.maximize { background: #28c840; }
+
+.traffic-light:hover { filter: brightness(1.2); }
+
+.window-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+/* ─── Wallpapers ─────────────────────────────────────────────────────────── */
+.wallpaper-default-gradient {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+.wallpaper-aurora {
+  background: linear-gradient(135deg, #0d1b2a 0%, #1b4332 40%, #081c15 100%);
+}
+
+.wallpaper-sunset {
+  background: linear-gradient(135deg, #2d1b69 0%, #c53030 50%, #744210 100%);
+}
+
+.wallpaper-ocean {
+  background: linear-gradient(135deg, #0c2340 0%, #1a56a0 50%, #0891b2 100%);
+}
+
+/* ─── Taskbar ─────────────────────────────────────────────────────────────── */
+.taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--taskbar-height);
+  background: rgba(17, 17, 27, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--os-border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 4px;
+  z-index: 9999;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ─── Utilities ──────────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(30, 30, 46, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pointer-events-none {
+  pointer-events: none;
+}

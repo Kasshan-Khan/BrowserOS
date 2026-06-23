@@ -111,7 +111,3 @@ browseros/
 ├── registry/          # Application plugin registry
 └── prisma/            # Prisma schema, migrations, and seed
 ```
-
-## License
-
-MIT

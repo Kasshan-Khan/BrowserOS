@@ -16,7 +16,7 @@ build/
 .env.production.local
 
 # Prisma
-prisma/migrations/
+# prisma/migrations/ — DO commit migrations, they reproduce the schema
 
 # Docker volumes
 docker/volumes/

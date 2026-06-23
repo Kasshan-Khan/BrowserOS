@@ -4,13 +4,13 @@ A production-grade browser operating system built with Next.js 15, TypeScript, P
 
 ## Features
 
-- **Authentication** — Secure session-based auth with Argon2id hashing, HTTP-only cookies, password reset
-- **Desktop Environment** — Wallpapers, icons, context menus, drag-and-drop, persistent layout
-- **Window Manager** — Resizable, draggable, multi-instance windows with z-index management
-- **Virtual File System** — Nested directories, search, move/copy/delete/rename, RBAC permissions, soft delete
+- **Authentication** — Secure session-based auth with Argon2id hashing, HTTP-only cookies, CSRF protection, and password reset
+- **Desktop Environment** — Wallpaper themes, desktop icons, right-click context menus, drag-and-drop positioning, and persistent layout
+- **Window Manager** — Resizable, draggable, multi-instance windows with z-index stacking and macOS-style traffic light controls
+- **Virtual File System** — Nested directories, search, move/copy/delete/rename, RBAC permissions, and soft delete
 - **Built-in Applications** — File Explorer, Terminal, Text Editor, Notes, Calculator, Settings
-- **Plugin Architecture** — Applications are dynamically registerable via a plugin registry
-- **Global Search** — Real-time search across apps, files, and settings via Socket.IO
+- **Plugin Architecture** — Applications are dynamically registerable via a self-contained app registry
+- **Global Search** — Ctrl+Space overlay with instant app search and async file search with keyboard navigation
 - **Realtime Sync** — Multi-device desktop and file sync via Socket.IO + Redis Pub/Sub
 
 ## Tech Stack
@@ -33,7 +33,7 @@ A production-grade browser operating system built with Next.js 15, TypeScript, P
 
 - Node.js 20+
 - Docker & Docker Compose
-- pnpm (recommended)
+- npm (comes with Node.js)
 
 ### Setup
 
@@ -43,7 +43,7 @@ git clone <repo-url>
 cd browseros
 
 # Install dependencies
-pnpm install
+npm install
 
 # Copy environment variables
 cp .env.example .env
@@ -53,42 +53,63 @@ cp .env.example .env
 docker compose up -d
 
 # Run database migrations
-pnpm prisma migrate dev
+npm run prisma:migrate
 
-# Seed initial data
-pnpm prisma db seed
+# Seed initial data (creates a demo user)
+npm run prisma:seed
 
 # Start the development server
-pnpm dev
+npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
 ## Architecture
 
-See [docs/architecture.md](docs/architecture.md) for full system design, tradeoffs, and ADRs.
+The project follows a layered architecture with strict server/client separation:
+
+- **Auth layer** — Argon2id hashing, Redis-backed sessions, sliding-window rate limiting, timing-safe login
+- **VFS layer** — PostgreSQL `fs_nodes` table with self-referential `parent_id` for a full tree structure
+- **RBAC layer** — Per-node `OWNER / EDITOR / VIEWER` roles with audit logging on every mutation
+- **Realtime layer** — Socket.IO rooms (`desktop:{userId}`, `fs:{userId}`) with Redis Pub/Sub for horizontal scaling
+- **App layer** — Plugin registry pattern; each app is self-contained with metadata and a default window size
+
+Key architectural decisions:
+- **Sessions over JWTs** — Redis-backed sessions allow instant revocation without a blocklist
+- **VFS as DB rows** — Complex queries, transactional consistency, and row-level RBAC without a separate storage service
+- **`server-only` isolation** — All server modules are marked to prevent native Node.js bindings from being bundled client-side
 
 ## Development
 
 ```bash
-pnpm dev          # Start dev server
-pnpm build        # Production build
-pnpm lint         # ESLint
-pnpm typecheck    # TypeScript check
-pnpm test         # Run tests
+npm run dev          # Start dev server
+npm run build        # Production build
+npm run lint         # ESLint
+npm run typecheck    # TypeScript check
+npm run prisma:studio  # Open Prisma Studio (DB GUI)
 ```
 
 ## Project Structure
 
 ```
-src/
-├── app/           # Next.js App Router (pages + API routes)
-├── components/    # React components (desktop, windows, apps, ui)
-├── lib/           # Server-side logic (auth, db, redis, vfs, rbac)
-├── store/         # Zustand state slices
-├── hooks/         # Custom React hooks
-├── types/         # Shared TypeScript types
-└── registry/      # Application plugin registry
+browseros/
+├── app/               # Next.js App Router (pages + API routes)
+│   ├── (auth)/        # Login, signup, reset password pages
+│   ├── (desktop)/     # Desktop shell page
+│   └── api/           # REST API routes
+├── components/        # React components
+│   ├── apps/          # Built-in applications (Explorer, Terminal, etc.)
+│   ├── desktop/       # Desktop shell, icons, context menu
+│   ├── taskbar/       # Taskbar, clock, system tray
+│   ├── window/        # WindowFrame and WindowManager
+│   ├── search/        # Global search overlay
+│   └── ui/            # Shared UI primitives (Toast, etc.)
+├── lib/               # Server-side logic (auth, db, redis, vfs, rbac)
+├── store/             # Zustand state slices
+├── hooks/             # Custom React hooks
+├── types/             # Shared TypeScript types
+├── registry/          # Application plugin registry
+└── prisma/            # Prisma schema, migrations, and seed
 ```
 
 ## License

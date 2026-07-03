@@ -90,7 +90,38 @@ export async function POST(request: NextRequest) {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await request.json();
+    const contentType = request.headers.get('content-type') || '';
+    let body: any = {};
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      const file = formData.get('file') as File | null;
+
+      if (file) {
+        const buffer = await file.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        const dataUrl = `data:${file.type || 'application/octet-stream'};base64,${base64}`;
+
+        const { createNode } = await import('@/lib/vfs');
+        const node = await createNode({
+          name: file.name,
+          type: 'FILE',
+          content: dataUrl,
+          mimeType: file.type,
+          ownerId: session.userId,
+        });
+
+        body.attachmentId = node.id;
+        body.attachmentName = file.name;
+        body.content = formData.get('content') || `Shared a file: ${file.name}`;
+      }
+
+      if (formData.get('receiverId')) body.receiverId = formData.get('receiverId');
+      if (formData.get('groupId')) body.groupId = formData.get('groupId');
+    } else {
+      body = await request.json();
+    }
+
     const { receiverId, groupId, content, attachmentId, attachmentName } = sendMessageSchema.parse(body);
 
     if (groupId) {

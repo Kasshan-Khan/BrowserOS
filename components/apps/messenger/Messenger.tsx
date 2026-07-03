@@ -289,6 +289,8 @@ export default function Messenger() {
       if (res.ok) {
         const data = await res.json();
         const content = data.node.content;
+        if (!content) return;
+
         const a = document.createElement('a');
         if (content.startsWith('data:')) {
           a.href = content;
@@ -297,7 +299,13 @@ export default function Messenger() {
           a.href = URL.createObjectURL(blob);
         }
         a.download = attachmentName;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
+        
+        if (!content.startsWith('data:')) {
+          URL.revokeObjectURL(a.href);
+        }
       }
     } catch { /* ignore */ }
   };

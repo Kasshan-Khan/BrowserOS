@@ -59,16 +59,19 @@ enum AuditAction {
 // ─── Users & Authentication ──────────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  username     String   @unique
+  id           String     @id @default(cuid())
+  email        String     @unique
+  username     String     @unique
   displayName  String
   passwordHash String
-  role         Role     @default(USER)
+  role         Role       @default(USER)
   avatarUrl    String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isActive     Boolean    @default(true)
+  status       UserStatus @default(OFFLINE)
+  statusText   String?    // Custom status message
+  currentApp   String?    // Rich presence: what app they're using
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   // Relations
   sessions           Session[]
@@ -82,6 +85,10 @@ model User {
   friendOf           Friendship[]         @relation("FriendUser")
   sentMessages       Message[]            @relation("SentMessages")
   receivedMessages   Message[]            @relation("ReceivedMessages")
+  ownedGroups        GroupChat[]           @relation("GroupOwner")
+  groupMemberships   GroupMember[]
+  sentTransfers      FileTransfer[]       @relation("SentTransfers")
+  receivedTransfers  FileTransfer[]       @relation("ReceivedTransfers")
 
   @@index([email])
   @@index([username])
@@ -233,10 +240,25 @@ model AuditLog {
 
 // ─── Social & Messaging ──────────────────────────────────────────────────────
 
+enum UserStatus {
+  ONLINE
+  AWAY
+  DO_NOT_DISTURB
+  INVISIBLE
+  OFFLINE
+}
+
 enum FriendshipStatus {
   PENDING
   ACCEPTED
   REJECTED
+}
+
+enum TransferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
 }
 
 model Friendship {
@@ -257,17 +279,74 @@ model Friendship {
 }
 
 model Message {
-  id         String   @id @default(cuid())
-  senderId   String
-  receiverId String
-  content    String
-  isRead     Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id             String   @id @default(cuid())
+  senderId       String
+  receiverId     String?
+  groupId        String?
+  content        String
+  attachmentId   String?  // VFS node ID
+  attachmentName String?  // Original filename
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
 
-  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender   User       @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User?      @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  group    GroupChat?  @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@index([senderId, receiverId])
+  @@index([groupId])
   @@index([createdAt])
   @@map("messages")
 }
+
+model GroupChat {
+  id        String   @id @default(cuid())
+  name      String
+  avatarUrl String?
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner    User          @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members  GroupMember[]
+  messages Message[]
+
+  @@index([ownerId])
+  @@map("group_chats")
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  group GroupChat @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("group_members")
+}
+
+model FileTransfer {
+  id           String         @id @default(cuid())
+  senderId     String
+  receiverId   String
+  fileNodeId   String         // VFS node ID being transferred
+  fileName     String
+  fileSize     Int            @default(0)
+  status       TransferStatus @default(PENDING)
+  createdAt    DateTime       @default(now())
+  completedAt  DateTime?
+
+  sender   User @relation("SentTransfers", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedTransfers", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+  @@map("file_transfers")
+}
+

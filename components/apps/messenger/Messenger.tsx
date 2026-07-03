@@ -289,7 +289,10 @@ export default function Messenger() {
       if (res.ok) {
         const data = await res.json();
         const content = data.node.content;
-        if (!content) return;
+        if (!content) {
+          alert('Download failed: The file content is empty.');
+          return;
+        }
 
         const a = document.createElement('a');
         if (content.startsWith('data:')) {
@@ -306,8 +309,13 @@ export default function Messenger() {
         if (!content.startsWith('data:')) {
           URL.revokeObjectURL(a.href);
         }
+      } else {
+        const err = await res.json();
+        alert(`Download failed: ${err.error || res.statusText}`);
       }
-    } catch { /* ignore */ }
+    } catch (err: any) { 
+      alert(`Download error: ${err.message}`);
+    }
   };
 
   const getOtherUser = (f: Friendship) => {

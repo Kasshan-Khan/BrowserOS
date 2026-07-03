@@ -105,7 +105,14 @@ export function initSocketIO(httpServer: HTTPServer): SocketIOServer {
 
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
+      origin: (requestOrigin, callback) => {
+        // Allow any origin in development (useful for ngrok/cloudflare tunnels)
+        if (process.env.NODE_ENV !== 'production') {
+          callback(null, true);
+        } else {
+          callback(null, process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000');
+        }
+      },
       credentials: true,
     },
     transports: ['websocket', 'polling'],
@@ -238,6 +245,7 @@ export function initSocketIO(httpServer: HTTPServer): SocketIOServer {
     });
 
     socket.on('call:initiate', ({ targetUserId, callType }: { targetUserId: string; callType: 'audio' | 'video' }) => {
+      console.log(`[Socket.IO] WebRTC call:initiate from ${userId} to ${targetUserId}`);
       io.to(Rooms.userNotifications(targetUserId)).emit(Events.CALL_INITIATE, {
         fromUserId: userId,
         fromUsername: username,
@@ -307,7 +315,7 @@ async function broadcastPresence(
       },
     });
 
-    const friendIds = friendships.map((f) =>
+    const friendIds = friendships.map((f : any) =>
       f.userId === userId ? f.friendId : f.userId
     );
 

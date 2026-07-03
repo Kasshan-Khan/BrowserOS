@@ -4,6 +4,8 @@ import { useEffect, useRef, useCallback } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { useDesktopStore } from '@/store/desktop.store';
 import { useFsStore } from '@/store/fs.store';
+import { useWindowStore } from '@/store/window.store';
+import { appRegistry } from '@/registry/app-registry';
 import { useAuthStore } from '@/store/auth.store';
 
 // Singleton socket instance
@@ -26,6 +28,7 @@ export function useSocket() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { setWallpaper, setLayout } = useDesktopStore();
   const { addNode, updateNode, removeNode } = useFsStore();
+  const openWindow = useWindowStore((s) => s.openWindow);
 
   const connect = useCallback(() => {
     if (socketRef.current?.connected) return;
@@ -72,7 +75,30 @@ export function useSocket() {
     socket.on('fs:node_moved', ({ node }: { node: Parameters<typeof updateNode>[1] & { id: string } }) => {
       if (node?.id) updateNode(node.id, node);
     });
-  }, [setWallpaper, setLayout, addNode, updateNode, removeNode]);
+
+    // Collab invites
+    socket.on('collab:invite', (inviteData: any) => {
+      const app = appRegistry.get('collab-editor');
+      if (app) {
+        openWindow({
+          instanceId: `collab-${inviteData.fileId}`,
+          appId: 'collab-editor',
+          title: inviteData.fileName,
+          x: Math.round(window.innerWidth / 2 - app.defaultSize.width / 2),
+          y: Math.round(window.innerHeight / 2 - app.defaultSize.height / 2),
+          width: app.defaultSize.width,
+          height: app.defaultSize.height,
+          isMinimized: false,
+          isMaximized: false,
+          appState: {
+            fileId: inviteData.fileId,
+            fileName: inviteData.fileName,
+            collabSession: inviteData, // pass the whole session object
+          },
+        });
+      }
+    });
+  }, [setWallpaper, setLayout, addNode, updateNode, removeNode, openWindow]);
 
   useEffect(() => {
     if (!isAuthenticated) return;

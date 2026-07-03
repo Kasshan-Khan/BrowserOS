@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx --conditions react-server server.ts",
     "build": "next build",
-    "start": "next start",
+    "start": "NODE_ENV=production tsx --conditions react-server server.ts",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
@@ -41,9 +41,11 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^3.3.0",
+    "untun": "^0.1.3",
     "uuid": "^11.1.0",
     "zod": "^3.24.4",
-    "zustand": "^5.0.5"
+    "zustand": "^5.0.5",
+    "tsx": "^4.19.4"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -58,7 +60,15 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "tailwindcss": "^4",
-    "tsx": "^4.19.4",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "argon2@0.41.1": true,
+    "esbuild@0.28.1": true,
+    "prisma@6.19.3": true,
+    "sharp@0.34.5": true,
+    "unrs-resolver@1.12.2": true
   }
 }

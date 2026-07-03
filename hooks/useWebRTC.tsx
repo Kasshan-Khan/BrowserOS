@@ -54,10 +54,30 @@ export function WebRTCProvider({ children }: { children: React.ReactNode }) {
   const { user: currentUser } = useAuthStore();
 
   const [callState, setCallState] = useState<CallState>('idle');
+  const callStateRef = useRef<CallState>('idle');
+
   const [callType, setCallType] = useState<CallType | null>(null);
+  
   const [remoteUserId, setRemoteUserId] = useState<string | null>(null);
+  const remoteUserIdRef = useRef<string | null>(null);
+  
   const [remoteUsername, setRemoteUsername] = useState<string | null>(null);
+  
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+
+  // Keep refs in sync
+  useEffect(() => {
+    callStateRef.current = callState;
+  }, [callState]);
+
+  useEffect(() => {
+    remoteUserIdRef.current = remoteUserId;
+  }, [remoteUserId]);
+
+  useEffect(() => {
+    localStreamRef.current = localStream;
+  }, [localStream]);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -92,12 +112,17 @@ export function WebRTCProvider({ children }: { children: React.ReactNode }) {
   // ─── Cleanup ──────────────────────────────────────────────────────────────
 
   const cleanup = useCallback(() => {
+    console.log('[WebRTC] Running cleanup...');
     if (pcRef.current) {
       pcRef.current.close();
       pcRef.current = null;
     }
-    if (localStream) {
-      localStream.getTracks().forEach((t) => t.stop());
+    const currentLocalStream = localStreamRef.current;
+    if (currentLocalStream) {
+      currentLocalStream.getTracks().forEach((t) => {
+        t.stop();
+        console.log(`[WebRTC] Stopped track: ${t.kind}`);
+      });
     }
     setLocalStream(null);
     setRemoteStream(null);
@@ -107,7 +132,7 @@ export function WebRTCProvider({ children }: { children: React.ReactNode }) {
     setRemoteUsername(null);
     setIncomingCall(null);
     pendingCandidatesRef.current = [];
-  }, [localStream]);
+  }, []);
 
   // ─── Create peer connection ───────────────────────────────────────────────
 
@@ -170,19 +195,14 @@ export function WebRTCProvider({ children }: { children: React.ReactNode }) {
 
       // Notify the target about the incoming call
       socket.emit('call:initiate', { targetUserId, callType: type });
-
-      const pc = createPeerConnection(targetUserId);
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      socket.emit('call:offer', { targetUserId, offer });
+      
+      // We do NOT create the peer connection or send the offer yet!
+      // We wait for the target to accept the call (call:accept event).
     } catch (err) {
       console.error('[WebRTC] Failed to initiate call:', err);
       cleanup();
     }
-  }, [socket, callState, getMediaStream, createPeerConnection, cleanup]);
+  }, [socket, callState, getMediaStream, cleanup]);
 
   // ─── Accept call ──────────────────────────────────────────────────────────
 
@@ -226,11 +246,13 @@ export function WebRTCProvider({ children }: { children: React.ReactNode }) {
   // ─── End call ─────────────────────────────────────────────────────────────
 
   const endCall = useCallback(() => {
-    if (socket && remoteUserId) {
-      socket.emit('call:end', { targetUserId: remoteUserId });
+    const currentRemoteUserId = remoteUserIdRef.current;
+    console.log(`[WebRTC] endCall called, targetUserId: ${currentRemoteUserId}`);
+    if (socket && currentRemoteUserId) {
+      socket.emit('call:end', { targetUserId: currentRemoteUserId });
     }
     cleanup();
-  }, [socket, remoteUserId, cleanup]);
+  }, [socket, cleanup]);
 
   // ─── Toggle mute/video ────────────────────────────────────────────────────
 
@@ -256,7 +278,9 @@ export function WebRTCProvider({ children }: { children: React.ReactNode }) {
     const onCallInitiate = ({ fromUserId, fromUsername, callType: ct }: {
       fromUserId: string; fromUsername: string; callType: CallType;
     }) => {
-      if (callState !== 'idle') {
+      console.log(`[WebRTC] Received call:initiate from ${fromUserId} (${fromUsername})`);
+      if (callStateRef.current !== 'idle') {
+        console.log(`[WebRTC] Auto-rejecting call, current state is ${callStateRef.current}`);
         // Already in a call, auto-reject
         socket.emit('call:reject', { targetUserId: fromUserId });
         return;
@@ -300,8 +324,26 @@ export function WebRTCProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    const onCallAccept = () => {
+    const onCallAccept = async () => {
+      const currentRemoteUserId = remoteUserIdRef.current;
+      const currentLocalStream = localStreamRef.current;
+      
+      if (!socket || !currentRemoteUserId || !currentLocalStream) return;
       setCallState('connected');
+      
+      // Now that the receiver accepted, the CALLER creates the offer
+      try {
+        const pc = createPeerConnection(currentRemoteUserId);
+        currentLocalStream.getTracks().forEach((track) => pc.addTrack(track, currentLocalStream));
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        socket.emit('call:offer', { targetUserId: currentRemoteUserId, offer });
+      } catch (err) {
+        console.error('[WebRTC] Failed to create offer after accept:', err);
+        cleanup();
+      }
     };
 
     const onCallReject = () => {
@@ -329,7 +371,7 @@ export function WebRTCProvider({ children }: { children: React.ReactNode }) {
       socket.off('call:reject', onCallReject);
       socket.off('call:end', onCallEnd);
     };
-  }, [socket, callState, cleanup]);
+  }, [socket, cleanup]);
 
   const contextValue = useMemo(() => ({
     callState, callType, remoteUserId, remoteUsername,

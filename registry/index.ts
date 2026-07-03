@@ -14,6 +14,7 @@ const Calculator = lazy(() => import('@/components/apps/calculator/Calculator'))
 const Settings = lazy(() => import('@/components/apps/settings/Settings'));
 const Browser = lazy(() => import('@/components/apps/browser/Browser'));
 const Messenger = lazy(() => import('@/components/apps/messenger/Messenger'));
+const CollabEditor = lazy(() => import('@/components/apps/collab-editor/CollabEditor'));
 
 export function registerBuiltinApps(): void {
   appRegistry.register({
@@ -113,5 +114,17 @@ export function registerBuiltinApps(): void {
     allowMultiple: false,
     component: Messenger,
     categories: ['social', 'chat', 'messenger'],
+  });
+
+  appRegistry.register({
+    id: 'collab-editor',
+    name: 'Collab Editor',
+    icon: '👥',
+    description: 'Collaboratively edit files with friends in real-time',
+    defaultSize: { width: 950, height: 650 },
+    minSize: { width: 600, height: 400 },
+    allowMultiple: true,
+    component: CollabEditor,
+    categories: ['editor', 'collab', 'social', 'code'],
   });
 }

@@ -16,6 +16,7 @@ const Browser = lazy(() => import('@/components/apps/browser/Browser'));
 const Messenger = lazy(() => import('@/components/apps/messenger/Messenger'));
 const CollabEditor = lazy(() => import('@/components/apps/collab-editor/CollabEditor'));
 const VideoCall = lazy(() => import('@/components/apps/video-call/VideoCall'));
+const AirDrop = lazy(() => import('@/components/apps/airdrop/AirDrop'));
 
 export function registerBuiltinApps(): void {
   appRegistry.register({
@@ -139,5 +140,17 @@ export function registerBuiltinApps(): void {
     allowMultiple: false,
     component: VideoCall,
     categories: ['social', 'call', 'video', 'voice'],
+  });
+
+  appRegistry.register({
+    id: 'airdrop',
+    name: 'AirDrop',
+    icon: '📡',
+    description: 'Send files to nearby friends instantly',
+    defaultSize: { width: 700, height: 500 },
+    minSize: { width: 550, height: 400 },
+    allowMultiple: false,
+    component: AirDrop,
+    categories: ['social', 'files', 'transfer', 'share'],
   });
 }

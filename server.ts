@@ -27,7 +27,18 @@ app.prepare().then(() => {
   initSocketIO(server);
 
   server.listen(port, () => {
-    console.log(`> Ready on http://${hostname}:${port}`);
+    console.log(`> Local:   http://${hostname === '0.0.0.0' ? 'localhost' : hostname}:${port}`);
+    
+    const { networkInterfaces } = require('os');
+    const nets = networkInterfaces();
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name]!) {
+        if (net.family === 'IPv4' && !net.internal) {
+          console.log(`> Network: http://${net.address}:${port}`);
+        }
+      }
+    }
+
     console.log(`> Socket.IO attached`);
   });
 }).catch((err) => {

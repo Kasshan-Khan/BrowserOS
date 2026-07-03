@@ -12,6 +12,7 @@ const TextEditor = lazy(() => import('@/components/apps/text-editor/TextEditor')
 const Notes = lazy(() => import('@/components/apps/notes/Notes'));
 const Calculator = lazy(() => import('@/components/apps/calculator/Calculator'));
 const Settings = lazy(() => import('@/components/apps/settings/Settings'));
+const Browser = lazy(() => import('@/components/apps/browser/Browser'));
 
 export function registerBuiltinApps(): void {
   appRegistry.register({
@@ -87,5 +88,17 @@ export function registerBuiltinApps(): void {
     component: Settings,
     categories: ['settings', 'preferences', 'system', 'account'],
     shortcut: 'Meta+,',
+  });
+
+  appRegistry.register({
+    id: 'browser',
+    name: 'Browser',
+    icon: '🌐',
+    description: 'Surf the web within BrowserOS',
+    defaultSize: { width: 1000, height: 700 },
+    minSize: { width: 600, height: 400 },
+    allowMultiple: true,
+    component: Browser,
+    categories: ['browser', 'web', 'internet'],
   });
 }

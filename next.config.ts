@@ -57,8 +57,17 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: blob: https:",
               "font-src 'self'",
               "connect-src 'self' ws: wss:",
-              "frame-ancestors 'none'",
+              "frame-ancestors 'self'",
             ].join('; '),
+          },
+        ],
+      },
+      {
+        source: '/api/proxy(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; frame-ancestors 'self';",
           },
         ],
       },

@@ -145,7 +145,7 @@ export default function Terminal({ instanceId, appState, onStateChange }: AppWin
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ name: args[0], type: 'DIRECTORY', parentId: cwd }),
+            body: JSON.stringify({ name: args[0], type: 'DIRECTORY', parentId: cwd ?? undefined }),
           });
           if (res.ok) print(`Created directory: ${args[0]}`);
           else { const d = await res.json(); print(d.error, 'error'); }
@@ -160,7 +160,7 @@ export default function Terminal({ instanceId, appState, onStateChange }: AppWin
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ name: args[0], type: 'FILE', parentId: cwd, content: '' }),
+            body: JSON.stringify({ name: args[0], type: 'FILE', parentId: cwd ?? undefined, content: '' }),
           });
           if (res.ok) print(`Created: ${args[0]}`);
           else { const d = await res.json(); print(d.error, 'error'); }

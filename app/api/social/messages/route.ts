@@ -111,6 +111,29 @@ export async function POST(request: NextRequest) {
           ownerId: session.userId,
         });
 
+        // Grant permissions to the receiver(s)
+        const receiverId = formData.get('receiverId') as string | null;
+        const groupId = formData.get('groupId') as string | null;
+
+        if (receiverId) {
+          await prisma.fsPermission.create({
+            data: { nodeId: node.id, userId: receiverId, level: 'VIEWER', grantedBy: session.userId },
+          });
+        } else if (groupId) {
+          const members = await prisma.groupMember.findMany({ where: { groupId } });
+          const perms = members
+            .filter((m) => m.userId !== session.userId)
+            .map((m) => ({
+              nodeId: node.id,
+              userId: m.userId,
+              level: 'VIEWER' as any, // TypeScript might complain about enum types in createMany without explicit casting
+              grantedBy: session.userId,
+            }));
+          if (perms.length > 0) {
+            await prisma.fsPermission.createMany({ data: perms });
+          }
+        }
+
         body.attachmentId = node.id;
         body.attachmentName = file.name;
         body.content = formData.get('content') || `Shared a file: ${file.name}`;

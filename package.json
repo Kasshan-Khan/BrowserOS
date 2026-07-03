@@ -45,13 +45,14 @@
     "uuid": "^11.1.0",
     "zod": "^3.24.4",
     "zustand": "^5.0.5",
-    "tsx": "^4.19.4"
+    "tsx": "^4.19.4",
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@types/cookie": "^0.6.0",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -59,7 +60,6 @@
     "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
-    "tailwindcss": "^4",
     "typescript": "^5"
   },
   "allowScripts": {

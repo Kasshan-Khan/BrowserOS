@@ -287,8 +287,8 @@ export default function Messenger() {
     try {
       const res = await fetch(`/api/fs/${attachmentId}`);
       if (res.ok) {
-        const data = await res.json();
-        const content = data.node.content;
+        const json = await res.json();
+        const content = json.data?.node?.content;
         if (!content) {
           alert('Download failed: The file content is empty.');
           return;
@@ -298,7 +298,7 @@ export default function Messenger() {
         if (content.startsWith('data:')) {
           a.href = content;
         } else {
-          const blob = new Blob([content], { type: data.node.mimeType || 'application/octet-stream' });
+          const blob = new Blob([content], { type: json.data.node.mimeType || 'application/octet-stream' });
           a.href = URL.createObjectURL(blob);
         }
         a.download = attachmentName;

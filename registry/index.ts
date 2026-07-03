@@ -13,6 +13,7 @@ const Notes = lazy(() => import('@/components/apps/notes/Notes'));
 const Calculator = lazy(() => import('@/components/apps/calculator/Calculator'));
 const Settings = lazy(() => import('@/components/apps/settings/Settings'));
 const Browser = lazy(() => import('@/components/apps/browser/Browser'));
+const Messenger = lazy(() => import('@/components/apps/messenger/Messenger'));
 
 export function registerBuiltinApps(): void {
   appRegistry.register({
@@ -100,5 +101,17 @@ export function registerBuiltinApps(): void {
     allowMultiple: true,
     component: Browser,
     categories: ['browser', 'web', 'internet'],
+  });
+
+  appRegistry.register({
+    id: 'messenger',
+    name: 'Messenger',
+    icon: '💬',
+    description: 'Chat with friends in real-time',
+    defaultSize: { width: 800, height: 600 },
+    minSize: { width: 600, height: 400 },
+    allowMultiple: false,
+    component: Messenger,
+    categories: ['social', 'chat', 'messenger'],
   });
 }

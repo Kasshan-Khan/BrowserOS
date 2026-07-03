@@ -1,4 +1,4 @@
-import 'server-only';
+
 import { Redis } from 'ioredis';
 
 // Prevent multiple instances in development hot-reload

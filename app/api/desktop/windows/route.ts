@@ -44,9 +44,17 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const windows = z.array(windowStateSchema).parse(body.windows);
 
-    // Upsert all windows in a transaction
-    await prisma.$transaction(
-      windows.map((w) =>
+    const activeInstanceIds = windows.map((w) => w.instanceId);
+
+    // Upsert all active windows and delete closed ones in a transaction
+    await prisma.$transaction([
+      prisma.windowState.deleteMany({
+        where: {
+          userId: session.userId,
+          instanceId: { notIn: activeInstanceIds },
+        },
+      }),
+      ...windows.map((w) =>
         prisma.windowState.upsert({
           where: {
             userId_instanceId: {
@@ -81,7 +89,7 @@ export async function PUT(request: NextRequest) {
           },
         })
       )
-    );
+    ]);
 
     return ok({ message: 'Window states saved' });
   } catch (error) {

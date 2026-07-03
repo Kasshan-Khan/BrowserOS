@@ -37,6 +37,10 @@ export const Events = {
 
   // Window state
   WINDOW_STATE_UPDATED: 'window:state_updated',
+
+  // Messenger
+  MESSENGER_MESSAGE_RECEIVED: 'messenger:message_received',
+  MESSENGER_FRIEND_REQUEST: 'messenger:friend_request',
 } as const;
 
 // ─── Initialize Socket.IO server ──────────────────────────────────────────────
@@ -133,4 +137,10 @@ export function emitDesktopEvent(userId: string, event: string, data: unknown): 
   const io = getIO();
   if (!io) return;
   io.to(Rooms.userDesktop(userId)).emit(event, data);
+}
+
+export function emitMessengerEvent(userId: string, event: string, data: unknown): void {
+  const io = getIO();
+  if (!io) return;
+  io.to(Rooms.userNotifications(userId)).emit(event, data);
 }

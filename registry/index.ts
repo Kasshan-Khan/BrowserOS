@@ -15,6 +15,7 @@ const Settings = lazy(() => import('@/components/apps/settings/Settings'));
 const Browser = lazy(() => import('@/components/apps/browser/Browser'));
 const Messenger = lazy(() => import('@/components/apps/messenger/Messenger'));
 const CollabEditor = lazy(() => import('@/components/apps/collab-editor/CollabEditor'));
+const VideoCall = lazy(() => import('@/components/apps/video-call/VideoCall'));
 
 export function registerBuiltinApps(): void {
   appRegistry.register({
@@ -126,5 +127,17 @@ export function registerBuiltinApps(): void {
     allowMultiple: true,
     component: CollabEditor,
     categories: ['editor', 'collab', 'social', 'code'],
+  });
+
+  appRegistry.register({
+    id: 'video-call',
+    name: 'Video Call',
+    icon: '📹',
+    description: 'Voice and video calls with friends',
+    defaultSize: { width: 640, height: 480 },
+    minSize: { width: 400, height: 350 },
+    allowMultiple: false,
+    component: VideoCall,
+    categories: ['social', 'call', 'video', 'voice'],
   });
 }

@@ -6,6 +6,7 @@ import {
   Users, Phone, Video, Search, ChevronLeft, FileText, Download, Hash,
 } from 'lucide-react';
 import { useSocket } from '@/hooks/useSocket';
+import { useWebRTC } from '@/hooks/useWebRTC';
 import { useAuthStore } from '@/store/auth.store';
 import { usePresenceStore } from '@/hooks/usePresence';
 
@@ -42,6 +43,7 @@ export default function Messenger() {
   const { user: currentUser } = useAuthStore();
   const onlineUsers = usePresenceStore((s) => s.onlineUsers);
   const friendPresence = usePresenceStore((s) => s.friendPresence);
+  const { initiateCall } = useWebRTC();
 
   const [friendships, setFriendships] = useState<Friendship[]>([]);
   const [groups, setGroups] = useState<GroupChat[]>([]);
@@ -52,6 +54,7 @@ export default function Messenger() {
   // UI states
   const [isLoading, setIsLoading] = useState(true);
   const [addMode, setAddMode] = useState<'friend' | 'group' | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [addFriendUsername, setAddFriendUsername] = useState('');
   const [addFriendStatus, setAddFriendStatus] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [groupName, setGroupName] = useState('');
@@ -560,10 +563,10 @@ export default function Messenger() {
               </div>
               {activeChat.type === 'dm' && (
                 <div className="flex gap-1">
-                  <button className="p-2 hover:bg-white/10 rounded-md transition-colors" title="Voice call">
+                  <button className="p-2 hover:bg-white/10 rounded-md transition-colors" title="Voice call" onClick={() => initiateCall(activeChat.user.id, 'audio')}>
                     <Phone size={15} className="text-zinc-400" />
                   </button>
-                  <button className="p-2 hover:bg-white/10 rounded-md transition-colors" title="Video call">
+                  <button className="p-2 hover:bg-white/10 rounded-md transition-colors" title="Video call" onClick={() => initiateCall(activeChat.user.id, 'video')}>
                     <Video size={15} className="text-zinc-400" />
                   </button>
                 </div>
@@ -615,9 +618,22 @@ export default function Messenger() {
             {/* Input */}
             <div className="px-4 py-3 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               <form onSubmit={sendMessage} className="flex items-center gap-2">
-                <button type="button" className="p-2 hover:bg-white/10 rounded-md transition-colors" title="Attach file">
+                <button type="button" className="p-2 hover:bg-white/10 rounded-md transition-colors" title="Attach file" onClick={() => fileInputRef.current?.click()}>
                   <Paperclip size={15} className="text-zinc-500" />
                 </button>
+                <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !activeChat) return;
+                  const form = new FormData();
+                  form.append('file', file);
+                  if (activeChat.type === 'dm') form.append('receiverId', activeChat.user.id);
+                  else form.append('groupId', activeChat.group.id);
+                  await fetch('/api/social/messages', {
+                    method: 'POST',
+                    body: form,
+                  });
+                  e.target.value = '';
+                }} />
                 <input
                   type="text" value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}

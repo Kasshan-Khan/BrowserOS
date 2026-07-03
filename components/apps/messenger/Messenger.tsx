@@ -283,6 +283,24 @@ export default function Messenger() {
   };
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
+  const downloadAttachment = async (attachmentId: string, attachmentName: string) => {
+    try {
+      const res = await fetch(`/api/fs/${attachmentId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const content = data.node.content;
+        const a = document.createElement('a');
+        if (content.startsWith('data:')) {
+          a.href = content;
+        } else {
+          const blob = new Blob([content], { type: data.node.mimeType || 'application/octet-stream' });
+          a.href = URL.createObjectURL(blob);
+        }
+        a.download = attachmentName;
+        a.click();
+      }
+    } catch { /* ignore */ }
+  };
 
   const getOtherUser = (f: Friendship) => {
     return f.userId === currentUser?.id ? f.friend : f.user;
@@ -601,7 +619,7 @@ export default function Messenger() {
                           <div className="mt-1.5 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs" style={{ background: 'rgba(0,0,0,0.2)' }}>
                             <FileText size={13} />
                             <span className="truncate flex-1">{msg.attachmentName}</span>
-                            <Download size={13} className="shrink-0 opacity-60 hover:opacity-100 cursor-pointer" />
+                            <Download size={13} className="shrink-0 opacity-60 hover:opacity-100 cursor-pointer" onClick={() => downloadAttachment(msg.attachmentId!, msg.attachmentName!)} />
                           </div>
                         )}
                       </div>

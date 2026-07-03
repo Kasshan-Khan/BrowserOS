@@ -79,6 +79,8 @@ export function DesktopContextMenu() {
           <MenuItem icon="🌊" label="Ocean" onClick={() => { setWallpaper('ocean'); hideContextMenu(); }} />
           <MenuDivider />
           <MenuItem icon="⚙️" label="Settings" onClick={() => openApp('settings')} />
+          <MenuDivider />
+          <MenuItem icon="🔄" label="Reset Layout" onClick={() => { useDesktopStore.getState().setIcons([]); hideContextMenu(); }} />
         </>
       )}
 

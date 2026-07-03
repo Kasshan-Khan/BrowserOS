@@ -15,11 +15,17 @@ export function DesktopIcons() {
   const displayIcons: DesktopIcon[] =
     icons.length > 0
       ? icons
-      : allApps.map((app, i) => ({
-          appId: app.id,
-          x: 20,
-          y: 20 + i * 90,
-        }));
+      : allApps.map((app, i) => {
+          const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+          const maxRows = Math.max(1, Math.floor((screenHeight - 100) / 90));
+          const col = Math.floor(i / maxRows);
+          const row = i % maxRows;
+          return {
+            appId: app.id,
+            x: 20 + col * 90,
+            y: 20 + row * 90,
+          };
+        });
 
   const handleDoubleClick = useCallback(
     (appId: string) => {

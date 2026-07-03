@@ -9,6 +9,9 @@ import { useSocket } from '@/hooks/useSocket';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import { useAuthStore } from '@/store/auth.store';
 import { usePresenceStore } from '@/hooks/usePresence';
+import { useWindowStore } from '@/store/window.store';
+import { appRegistry } from '@/registry/app-registry';
+import { v4 as uuidv4 } from 'uuid';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,6 +47,26 @@ export default function Messenger() {
   const onlineUsers = usePresenceStore((s) => s.onlineUsers);
   const friendPresence = usePresenceStore((s) => s.friendPresence);
   const { initiateCall } = useWebRTC();
+  const openWindow = useWindowStore((s) => s.openWindow);
+
+  const handleInitiateCall = (targetId: string, type: 'audio' | 'video') => {
+    initiateCall(targetId, type);
+    const app = appRegistry.get('video-call');
+    if (app) {
+      openWindow({
+        instanceId: 'video-call-main',
+        appId: 'video-call',
+        title: app.name,
+        x: Math.round(window.innerWidth / 2 - app.defaultSize.width / 2),
+        y: Math.round(window.innerHeight / 2 - app.defaultSize.height / 2),
+        width: app.defaultSize.width,
+        height: app.defaultSize.height,
+        isMinimized: false,
+        isMaximized: false,
+        appState: {},
+      });
+    }
+  };
 
   const [friendships, setFriendships] = useState<Friendship[]>([]);
   const [groups, setGroups] = useState<GroupChat[]>([]);
@@ -597,10 +620,10 @@ export default function Messenger() {
               </div>
               {activeChat.type === 'dm' && (
                 <div className="flex gap-1">
-                  <button className="p-2 hover:bg-white/10 rounded-md transition-colors" title="Voice call" onClick={() => initiateCall(activeChat.user.id, 'audio')}>
+                  <button className="p-2 hover:bg-white/10 rounded-md transition-colors" title="Voice call" onClick={() => handleInitiateCall(activeChat.user.id, 'audio')}>
                     <Phone size={15} className="text-zinc-400" />
                   </button>
-                  <button className="p-2 hover:bg-white/10 rounded-md transition-colors" title="Video call" onClick={() => initiateCall(activeChat.user.id, 'video')}>
+                  <button className="p-2 hover:bg-white/10 rounded-md transition-colors" title="Video call" onClick={() => handleInitiateCall(activeChat.user.id, 'video')}>
                     <Video size={15} className="text-zinc-400" />
                   </button>
                 </div>

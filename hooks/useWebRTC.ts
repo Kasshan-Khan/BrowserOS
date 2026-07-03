@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSocket } from './useSocket';
 import { useAuthStore } from '@/store/auth.store';
+import { useWindowStore } from '@/store/window.store';
+import { appRegistry } from '@/registry/app-registry';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 
@@ -43,9 +45,11 @@ export interface UseWebRTCReturn {
   toggleVideo: () => void;
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+// ─── Context & Provider ────────────────────────────────────────────────────────
 
-export function useWebRTC(): UseWebRTCReturn {
+const WebRTCContext = createContext<UseWebRTCReturn | null>(null);
+
+export function WebRTCProvider({ children }: { children: React.ReactNode }) {
   const socket = useSocket();
   const { user: currentUser } = useAuthStore();
 
@@ -58,6 +62,29 @@ export function useWebRTC(): UseWebRTCReturn {
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+
+  const openWindow = useWindowStore((s) => s.openWindow);
+
+  // Auto-open video call window for incoming calls
+  useEffect(() => {
+    if (callState === 'incoming') {
+      const app = appRegistry.get('video-call');
+      if (app) {
+        openWindow({
+          instanceId: 'video-call-main',
+          appId: 'video-call',
+          title: app.name,
+          x: Math.round(window.innerWidth / 2 - app.defaultSize.width / 2),
+          y: Math.round(window.innerHeight / 2 - app.defaultSize.height / 2),
+          width: app.defaultSize.width,
+          height: app.defaultSize.height,
+          isMinimized: false,
+          isMaximized: false,
+          appState: {},
+        });
+      }
+    }
+  }, [callState, openWindow]);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
@@ -113,11 +140,20 @@ export function useWebRTC(): UseWebRTCReturn {
   // ─── Get media stream ─────────────────────────────────────────────────────
 
   const getMediaStream = useCallback(async (type: CallType): Promise<MediaStream> => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
+      alert('Camera and Microphone access requires a secure connection (HTTPS) or localhost.');
+      throw new Error('mediaDevices is undefined (insecure context)');
+    }
     const constraints: MediaStreamConstraints = {
       audio: true,
       video: type === 'video',
     };
-    return navigator.mediaDevices.getUserMedia(constraints);
+    try {
+      return await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err: any) {
+      alert(`Could not access media devices: ${err.message}`);
+      throw err;
+    }
   }, []);
 
   // ─── Initiate call ────────────────────────────────────────────────────────
@@ -295,11 +331,31 @@ export function useWebRTC(): UseWebRTCReturn {
     };
   }, [socket, callState, cleanup]);
 
-  return {
+  const contextValue = useMemo(() => ({
     callState, callType, remoteUserId, remoteUsername,
     localStream, remoteStream, incomingCall,
     isMuted, isVideoOff,
     initiateCall, acceptCall, rejectCall, endCall,
     toggleMute, toggleVideo,
-  };
+  }), [
+    callState, callType, remoteUserId, remoteUsername,
+    localStream, remoteStream, incomingCall,
+    isMuted, isVideoOff,
+    initiateCall, acceptCall, rejectCall, endCall,
+    toggleMute, toggleVideo,
+  ]);
+
+  return (
+    <WebRTCContext.Provider value={contextValue}>
+      {children}
+    </WebRTCContext.Provider>
+  );
+}
+
+export function useWebRTC(): UseWebRTCReturn {
+  const context = useContext(WebRTCContext);
+  if (!context) {
+    throw new Error('useWebRTC must be used within a WebRTCProvider');
+  }
+  return context;
 }

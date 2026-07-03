@@ -12,6 +12,7 @@ import { useDesktopSync } from '@/hooks/useDesktopSync';
 import { useWindowPersistence } from '@/hooks/useWindowPersistence';
 import { useDesktopLayoutPersistence } from '@/hooks/useDesktopLayoutPersistence';
 import { useSocket } from '@/hooks/useSocket';
+import { WebRTCProvider } from '@/hooks/useWebRTC';
 import { appRegistry } from '@/registry/app-registry';
 import { v4 as uuidv4 } from 'uuid';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -117,30 +118,32 @@ export function Desktop() {
   const wallpaperClass = `wallpaper-${wallpaper}`;
 
   return (
-    <div
-      className={`desktop-root ${wallpaperClass}`}
-      onContextMenu={handleContextMenu}
-      onClick={handleClick}
-      role="main"
-      aria-label="Desktop"
-    >
-      {/* Desktop icons */}
-      <DesktopIcons />
+    <WebRTCProvider>
+      <div
+        className={`desktop-root ${wallpaperClass}`}
+        onContextMenu={handleContextMenu}
+        onClick={handleClick}
+        role="main"
+        aria-label="Desktop"
+      >
+        {/* Desktop icons */}
+        <DesktopIcons />
 
-      {/* Open windows */}
-      <WindowManager />
+        {/* Open windows */}
+        <WindowManager />
 
-      {/* Right-click context menu */}
-      <DesktopContextMenu />
+        {/* Right-click context menu */}
+        <DesktopContextMenu />
 
-      {/* Global search overlay (Ctrl/Cmd+Space) */}
-      <GlobalSearch />
+        {/* Global search overlay (Ctrl/Cmd+Space) */}
+        <GlobalSearch />
 
-      {/* System taskbar */}
-      <Taskbar />
+        {/* System taskbar */}
+        <Taskbar />
 
-      {/* Toast notifications */}
-      <ToastContainer />
-    </div>
+        {/* Toast notifications */}
+        <ToastContainer />
+      </div>
+    </WebRTCProvider>
   );
 }

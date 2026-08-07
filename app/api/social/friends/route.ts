@@ -19,10 +19,10 @@ export async function GET(request: NextRequest) {
       },
       include: {
         user: {
-          select: { id: true, username: true, displayName: true, avatarUrl: true, isActive: true },
+          select: { id: true, username: true, displayName: true, avatarUrl: true, isActive: true, status: true },
         },
         friend: {
-          select: { id: true, username: true, displayName: true, avatarUrl: true, isActive: true },
+          select: { id: true, username: true, displayName: true, avatarUrl: true, isActive: true, status: true },
         },
       },
       orderBy: { updatedAt: 'desc' },

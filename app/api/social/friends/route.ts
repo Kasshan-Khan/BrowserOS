@@ -28,7 +28,18 @@ export async function GET(request: NextRequest) {
       orderBy: { updatedAt: 'desc' },
     });
 
-    return NextResponse.json({ friendships });
+    const { getOnlineUsers } = await import('@/lib/socket/server');
+    const onlineUsersList = await getOnlineUsers();
+    const onlineSet = new Set(onlineUsersList);
+
+    // Override status based on real-time Redis presence
+    const mappedFriendships = friendships.map(f => {
+      if (f.user) f.user.status = onlineSet.has(f.user.id) ? 'ONLINE' : 'OFFLINE';
+      if (f.friend) f.friend.status = onlineSet.has(f.friend.id) ? 'ONLINE' : 'OFFLINE';
+      return f;
+    });
+
+    return NextResponse.json({ friendships: mappedFriendships });
   } catch (error: any) {
     if (error.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     return NextResponse.json({ error: 'Failed to fetch friends' }, { status: 500 });

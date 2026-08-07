@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { AppWindowProps } from '@/registry/app-registry';
 import type { FsNodeClient } from '@/store/fs.store';
+import { useWindowStore } from '@/store/window.store';
 
 export default function FileExplorer({ instanceId, appState, onStateChange, onClose }: AppWindowProps) {
+  const openWindow = useWindowStore((s) => s.openWindow);
   const [nodes, setNodes] = useState<FsNodeClient[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(
     (appState.currentDirId as string) ?? null
@@ -181,9 +183,21 @@ export default function FileExplorer({ instanceId, appState, onStateChange, onCl
                   setSelected(e.ctrlKey || e.metaKey ? new Set([...Array.from(selected), node.id]) : new Set([node.id]));
                 }}
                 onDoubleClick={() => {
-                  if (node.type === 'DIRECTORY') navigateTo(node);
-                  else {
-                    // Open in text editor
+                  if (node.type === 'DIRECTORY') {
+                    navigateTo(node);
+                  } else {
+                    openWindow({
+                      instanceId: `text-editor-${node.id}`,
+                      appId: 'text-editor',
+                      title: node.name,
+                      x: Math.round(Math.random() * 50 + 50),
+                      y: Math.round(Math.random() * 50 + 50),
+                      width: 900,
+                      height: 650,
+                      isMinimized: false,
+                      isMaximized: false,
+                      appState: { fileId: node.id, fileName: node.name },
+                    });
                   }
                 }}
                 onContextMenu={(e) => {
@@ -206,7 +220,24 @@ export default function FileExplorer({ instanceId, appState, onStateChange, onCl
                   e.stopPropagation();
                   setSelected(e.ctrlKey || e.metaKey ? new Set([...Array.from(selected), node.id]) : new Set([node.id]));
                 }}
-                onDoubleClick={() => node.type === 'DIRECTORY' && navigateTo(node)}
+                onDoubleClick={() => {
+                  if (node.type === 'DIRECTORY') {
+                    navigateTo(node);
+                  } else {
+                    openWindow({
+                      instanceId: `text-editor-${node.id}`,
+                      appId: 'text-editor',
+                      title: node.name,
+                      x: Math.round(Math.random() * 50 + 50),
+                      y: Math.round(Math.random() * 50 + 50),
+                      width: 900,
+                      height: 650,
+                      isMinimized: false,
+                      isMaximized: false,
+                      appState: { fileId: node.id, fileName: node.name },
+                    });
+                  }
+                }}
               />
             ))}
           </div>

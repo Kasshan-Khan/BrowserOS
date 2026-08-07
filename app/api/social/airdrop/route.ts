@@ -170,6 +170,15 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
+    await prisma.fsPermission.create({
+      data: {
+        nodeId: newNode.id,
+        userId: session.userId,
+        level: 'OWNER',
+        grantedBy: session.userId,
+      },
+    });
+
     emitFsEvent(session.userId, Events.FS_NODE_CREATED, { node: newNode });
 
     // Update transfer status

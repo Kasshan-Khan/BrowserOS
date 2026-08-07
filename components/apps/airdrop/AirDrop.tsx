@@ -92,10 +92,10 @@ export default function AirDrop() {
 
   const fetchFiles = async () => {
     try {
-      const res = await fetch('/api/fs?type=FILE');
+      const res = await fetch('/api/fs');
       if (res.ok) {
         const data = await res.json();
-        setFiles((data.data?.children ?? []).filter((n: any) => n.type === 'FILE'));
+        setFiles((data.data?.nodes ?? []).filter((n: any) => n.type === 'FILE'));
       }
     } catch { /* */ }
   };

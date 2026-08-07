@@ -57,7 +57,7 @@ export const usePresenceStore = create<PresenceState>((set) => ({
 
 export function usePresence() {
   const socket = useSocket();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { isAuthenticated, user: currentUser } = useAuthStore();
   const { setOnline, setOffline, updatePresence, setInitialOnline } = usePresenceStore();
 
   // Fetch initial online friends list
@@ -71,7 +71,7 @@ export function usePresence() {
       const onlineIds: string[] = [];
       for (const f of friendships) {
         if (f.status !== 'ACCEPTED') continue;
-        const other = f.user ?? f.friend;
+        const other = f.userId === currentUser?.id ? f.friend : f.user;
         if (other?.status && other.status !== 'OFFLINE') {
           onlineIds.push(other.id);
         }
@@ -80,7 +80,7 @@ export function usePresence() {
     } catch {
       // non-critical
     }
-  }, [setInitialOnline]);
+  }, [setInitialOnline, currentUser?.id]);
 
   useEffect(() => {
     if (!isAuthenticated) return;

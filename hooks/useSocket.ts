@@ -98,6 +98,25 @@ export function useSocket() {
         });
       }
     });
+
+    // AirDrop requests
+    socket.on('airdrop:request', (data: any) => {
+      const app = appRegistry.get('airdrop');
+      if (app) {
+        openWindow({
+          instanceId: 'airdrop-main',
+          appId: 'airdrop',
+          title: app.name,
+          x: Math.round(window.innerWidth / 2 - app.defaultSize.width / 2),
+          y: Math.round(window.innerHeight / 2 - app.defaultSize.height / 2),
+          width: app.defaultSize.width,
+          height: app.defaultSize.height,
+          isMinimized: false,
+          isMaximized: false,
+          appState: {},
+        });
+      }
+    });
   }, [setWallpaper, setLayout, addNode, updateNode, removeNode, openWindow]);
 
   useEffect(() => {

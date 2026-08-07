@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
-import { emitToUser, Events } from '@/lib/socket/server';
+import { emitToUser, emitFsEvent, Events } from '@/lib/socket/server';
 import { z } from 'zod';
 
 const initiateSchema = z.object({
@@ -157,7 +157,7 @@ export async function PATCH(request: NextRequest) {
     });
 
     // Create a copy of the file in receiver's filesystem
-    await prisma.fsNode.create({
+    const newNode = await prisma.fsNode.create({
       data: {
         name: sourceFile.name,
         type: 'FILE',
@@ -169,6 +169,8 @@ export async function PATCH(request: NextRequest) {
         path: homeDir ? `${homeDir.path}/${sourceFile.name}` : `/${sourceFile.name}`,
       },
     });
+
+    emitFsEvent(session.userId, Events.FS_NODE_CREATED, { node: newNode });
 
     // Update transfer status
     await prisma.fileTransfer.update({

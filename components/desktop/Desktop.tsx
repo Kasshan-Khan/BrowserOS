@@ -12,6 +12,7 @@ import { useDesktopSync } from '@/hooks/useDesktopSync';
 import { useWindowPersistence } from '@/hooks/useWindowPersistence';
 import { useDesktopLayoutPersistence } from '@/hooks/useDesktopLayoutPersistence';
 import { useSocket } from '@/hooks/useSocket';
+import { usePresence } from '@/hooks/usePresence';
 import { WebRTCProvider } from '@/hooks/useWebRTC';
 import { appRegistry } from '@/registry/app-registry';
 import { v4 as uuidv4 } from 'uuid';
@@ -32,6 +33,9 @@ export function Desktop() {
 
   // Realtime multi-device sync via Socket.IO
   useSocket();
+
+  // Realtime presence tracking (online/offline status)
+  usePresence();
 
   // Load persisted window states on mount
   useEffect(() => {

@@ -35,7 +35,7 @@ export async function createNode({
 }: {
   name: string;
   type: FsNodeType;
-  parentId?: string;
+  parentId?: string | null;
   ownerId: string;
   content?: string;
   mimeType?: string;

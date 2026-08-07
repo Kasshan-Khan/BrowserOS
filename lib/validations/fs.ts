@@ -10,7 +10,7 @@ const VALID_NAME = z
 export const createNodeSchema = z.object({
   name: VALID_NAME,
   type: z.enum(['FILE', 'DIRECTORY']),
-  parentId: z.string().cuid().optional(),
+  parentId: z.string().cuid().nullable().optional(),
   content: z.string().max(10 * 1024 * 1024, 'File too large').optional(), // 10MB text limit
   mimeType: z.string().max(100).optional(),
 });

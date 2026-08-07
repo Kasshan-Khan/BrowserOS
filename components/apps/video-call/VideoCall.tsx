@@ -107,7 +107,7 @@ export default function VideoCall() {
       <div className="flex flex-col h-full relative" style={{ background: '#0a0a14' }}>
         {/* Remote video / Audio-only UI */}
         {isVideoCall ? (
-          <div className="flex-1 relative">
+          <div className="flex-1 relative min-h-0 overflow-hidden">
             <video
               ref={remoteVideoRef}
               autoPlay playsInline
@@ -125,7 +125,7 @@ export default function VideoCall() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center min-h-0">
             <div className="text-center space-y-4">
               <div className="w-28 h-28 mx-auto rounded-full flex items-center justify-center text-4xl font-bold" style={{ background: 'linear-gradient(135deg, #3b82f6, #06b6d4)' }}>
                 {remoteUsername?.[0].toUpperCase() ?? '?'}

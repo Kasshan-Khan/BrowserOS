@@ -40,6 +40,14 @@ export async function getEffectivePermission(
   userId: string,
   nodeId: string
 ): Promise<PermissionLevel | null> {
+  // If the user physically owns the file, implicitly grant OWNER level
+  // even if the FsPermission join table record is missing.
+  const node = await prisma.fsNode.findUnique({
+    where: { id: nodeId },
+    select: { ownerId: true },
+  });
+  if (node?.ownerId === userId) return 'OWNER';
+
   const perm = await prisma.fsPermission.findUnique({
     where: { nodeId_userId: { nodeId, userId } },
   });

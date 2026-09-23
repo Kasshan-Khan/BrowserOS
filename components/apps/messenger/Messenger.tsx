@@ -565,11 +565,13 @@ export default function Messenger() {
                     <div className="flex-1 truncate">
                       <div className="text-xs font-medium">{friend.displayName}</div>
                       <div className="text-[10px] text-zinc-500 truncate">
-                        {presence?.currentApp
-                          ? `Using ${presence.currentApp}`
-                          : presence?.statusText
-                            ? presence.statusText
-                            : online ? 'Online' : 'Offline'}
+                        {!online
+                          ? 'Offline'
+                          : presence?.currentApp
+                            ? `Using ${presence.currentApp}`
+                            : presence?.statusText
+                              ? presence.statusText
+                              : 'Online'}
                       </div>
                     </div>
                     {unread > 0 && (

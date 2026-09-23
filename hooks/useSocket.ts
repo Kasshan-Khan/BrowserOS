@@ -120,12 +120,12 @@ export function useSocket() {
   }, [setWallpaper, setLayout, addNode, updateNode, removeNode, openWindow]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    connect();
-
-    return () => {
-      // Don't disconnect on unmount — keep socket alive for the session
-    };
+    if (isAuthenticated) {
+      connect();
+    } else if (socketInstance) {
+      socketInstance.disconnect();
+      socketInstance = null;
+    }
   }, [isAuthenticated, connect]);
 
   return socketRef.current;

@@ -222,12 +222,6 @@ export function WebRTCProvider({ children }: { children: React.ReactNode }) {
       const pc = createPeerConnection(incomingCall.fromUserId);
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-      // Process any pending ICE candidates
-      for (const candidate of pendingCandidatesRef.current) {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
-      }
-      pendingCandidatesRef.current = [];
-
       setIncomingCall(null);
     } catch (err) {
       console.error('[WebRTC] Failed to accept call:', err);
@@ -298,6 +292,12 @@ export function WebRTCProvider({ children }: { children: React.ReactNode }) {
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         socket.emit('call:answer', { targetUserId: fromUserId, answer });
+        
+        // Process any pending ICE candidates now that remote description is set
+        for (const candidate of pendingCandidatesRef.current) {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+        pendingCandidatesRef.current = [];
       } catch (err) {
         console.error('[WebRTC] Failed to handle offer:', err);
       }
@@ -310,6 +310,12 @@ export function WebRTCProvider({ children }: { children: React.ReactNode }) {
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(answer));
         setCallState('connected');
+        
+        // Process any pending ICE candidates now that remote description is set
+        for (const candidate of pendingCandidatesRef.current) {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+        pendingCandidatesRef.current = [];
       } catch (err) {
         console.error('[WebRTC] Failed to handle answer:', err);
       }

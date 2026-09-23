@@ -50,7 +50,11 @@ export const usePresenceStore = create<PresenceState>((set) => ({
     }),
 
   setInitialOnline: (userIds) =>
-    set({ onlineUsers: new Set(userIds) }),
+    set((state) => {
+      const next = new Set(state.onlineUsers);
+      userIds.forEach((id) => next.add(id));
+      return { onlineUsers: next };
+    }),
 }));
 
 // ─── Presence hook ────────────────────────────────────────────────────────────
